@@ -40,10 +40,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_exception_handler(CAMSException, global_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)
 
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware, max_requests=100, window=60)
-app.add_middleware(AuditMiddleware)
-app.add_middleware(RequestLoggerMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,7 +48,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, max_requests=100, window=60)
+app.add_middleware(AuditMiddleware)
+app.add_middleware(RequestLoggerMiddleware)
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health")
