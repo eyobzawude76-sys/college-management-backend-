@@ -10,7 +10,7 @@ def hash_password(password: str) -> str:
 
 async def seed_users():
     # MongoDB Connection
-    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    client = AsyncIOMotorClient("mongodb+srv://eyobzawude76_db_user:mySecret123@cluster0.uo74prq.mongodb.net/college_academic_db?retryWrites=true&w=majority")
     db = client["college_academic_db"]
     users_collection = db["users"]
 
