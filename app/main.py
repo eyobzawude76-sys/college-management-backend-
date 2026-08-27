@@ -48,9 +48,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-@app.options("/{full_path:path}")
-async def options_handler(full_path : str):
-    return{}
+
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, max_requests=100, window=60)
 app.add_middleware(AuditMiddleware)
