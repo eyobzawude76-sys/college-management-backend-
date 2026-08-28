@@ -43,10 +43,9 @@ app.add_exception_handler(Exception, global_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "https://teddy-gules.vercel.app",
+    allow_origins=["https://teddy-gules.vercel.app",
     "https://obzawude76-6349.vercel.app",
-]
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
