@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, EmailStr
 from passlib.context import CryptContext
 
-
+import os
 
 from app.database import (
     db,
@@ -70,10 +70,18 @@ async def create_audit_log(
 def fix_url(path_str: str) -> str:
     if not path_str:
         return ""
+
     clean_path = str(path_str).replace("\\", "/").lstrip("/")
-    if clean_path.startswith("http"):
+
+    if clean_path.startswith(("http://", "https://")):
         return clean_path
-    return f"http://localhost:8000/{clean_path}"
+
+    base_url = os.getenv(
+        "BACKEND_URL",
+        "http://localhost:8000"
+    ).rstrip("/")
+
+    return f"{base_url}/{clean_path}"
 
 # ============================================================
 # SCHEMAS
@@ -255,10 +263,10 @@ async def approve_or_reject_student(
     if action in ["approve", "approved"]:
         dept_id = approval.departmentId or student.get("departmentId")
         req_level_num = student.get("requestedLevelNumber") or 1
-        
+
         dept_id_str = str(dept_id) if dept_id else ""
         dept_id_obj = ObjectId(dept_id_str) if (dept_id_str and ObjectId.is_valid(dept_id_str)) else dept_id
-        
+
         # Level DB keessaa String fi ObjectId lachuu check gochuun barbaadi
         level_doc = await levels_collection.find_one({
             "levelNumber": req_level_num,
@@ -290,7 +298,7 @@ async def approve_or_reject_student(
 
         if action in ["approve", "approved"]:
          user_id_val = str(current_user.id if hasattr(current_user, "id") else current_user.get("_id", current_user))
-        
+
         # Dept ID fi Level ID qulqulleessanii String-itti jijjiiruu
         dept_id_val = str(dept_id) if dept_id else ""
         level_id_val = str(target_level["_id"]) if target_level else ""
@@ -620,7 +628,7 @@ async def get_courses(
 async def get_pending_students():
     print(" X1X2X3 THIS IS THE ACTIVE ENDPOINT")
     raw_students = await db.students.find({"status": "pending"}).to_list(100)
-    
+
     # 1. Fetch departments & map BOTH string ID and ObjectId
     dept_docs = await db.departments.find({}).to_list(100)
     departments = {}
@@ -640,15 +648,15 @@ async def get_pending_students():
     students = []
     for s in raw_students:
         student_id_str = str(s["_id"])
-        
+
         # --- DEPARTMENT MATCHING ---
         dept_raw = s.get("departmentId") or s.get("dept_id")
         dept_name = None
-        
+
         if dept_raw:
             # Check string and ObjectId formats
             dept_name = departments.get(dept_raw) or departments.get(str(dept_raw))
-            
+
         if not dept_name or dept_name == "N/A":
             dept_name = s.get("department") if (s.get("department") and s.get("department") != "N/A") else "Not Assigned"
 
@@ -690,8 +698,6 @@ async def get_pending_students():
         })
 
     return students
-      
-      
 
 @router.post("/fix-null-departments", status_code=status.HTTP_200_OK)
 async def fix_null_departments_route():
@@ -703,11 +709,11 @@ async def fix_null_departments_route():
         if course_id:
             c_id = ObjectId(course_id) if isinstance(course_id, str) else course_id
             course = await courses_collection.find_one({"_id": c_id})
-            
+
             if course and course.get("departmentId"):
                 dept_id = course["departmentId"]
                 dept_obj_id = ObjectId(dept_id) if isinstance(dept_id, str) else dept_id
-                
+
                 await users_collection.update_one(
                     {"_id": u["_id"]},
                     {"$set": {"departmentId": dept_obj_id}}
